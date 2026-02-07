@@ -1,6 +1,10 @@
 # ZeroBank
+<img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/5eca5ed6-d389-4036-ab0c-7d392ba6424c" />
 
 > A crypto-native shorting infrastructure for meme markets.
+>
+x:https://x.com/ZeroBankDapp
+
 
 ## Why ZeroBank
 
@@ -98,4 +102,65 @@ This mirrors traditional short selling but is fully on-chain and permissionless.
 ZeroBank uses a **Health Factor** model to manage risk.
 
 #### Health Factor Formula
+
+
+- When `Health Factor >= 0.9`
+  - Position becomes liquidatable
+  - Liquidators can repay debt and receive collateral at a discount
+
+This ensures system solvency during high volatility.
+
+---
+
+### 5. Circuit Breaker & Bad Debt Prevention
+
+**Objective:** Prevent undercollateralized positions (`Health Factor > 1`).
+
+#### Circuit Breaker Rules
+
+- Monitor price changes per minute
+- If price movement exceeds **10% within 1 minute**:
+  - Pause same-direction trading
+  - Resume after **10 seconds**
+
+This mechanism:
+- Gives liquidators time to act
+- Reduces oracle manipulation risk
+- Limits cascading liquidations
+
+---
+
+## Why ZeroBank Matters
+
+- Meme markets are asymmetric by nature
+- Attention decay is predictable but untradable today
+- ZeroBank enables:
+  - Two-sided markets
+  - Better price discovery
+  - Sustainable meme ecosystems
+
+**Not every meme deserves to pump forever.  
+But every meme deserves a short.**
+
+---
+
+## Summary
+
+- Meme shorting infrastructure
+- ERC-4626 vault architecture
+- Native liquidation engine
+- Volatility-aware circuit breaker
+- Built for the reality of meme markets
+
+> Every meme ends at zero.  
+> ZeroBank lets you trade it.
+
+---
+
+## Disclaimer
+
+ZeroBank is experimental software.  
+Meme markets are highly volatile and risky.  
+Use at your own risk.
+
 
