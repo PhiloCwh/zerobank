@@ -1,10 +1,10 @@
 # ZeroBank
+
 <img width="1024" height="1536" alt="image" src="https://github.com/user-attachments/assets/5eca5ed6-d389-4036-ab0c-7d392ba6424c" />
 
 > A crypto-native shorting infrastructure for meme markets.
 >
-x:https://x.com/ZeroBankDapp
-
+> x:https://x.com/ZeroBankDapp
 
 ## Why ZeroBank
 
@@ -15,6 +15,7 @@ As long-time meme players, we all know the inevitable outcome of every meme:
 > **When attention disappears, the price goes to zero.**
 
 However, the current meme ecosystem only supports:
+
 - Launch
 - Pump
 - Exit via liquidity drain
@@ -34,7 +35,7 @@ What’s missing is a **native way to short memes**, especially **from day one**
 - On-chain risk management
 - Crypto-native vault-based design
 
-ZeroBank treats *going to zero* not as a failure, but as a **tradable market outcome**.
+ZeroBank treats _going to zero_ not as a failure, but as a **tradable market outcome**.
 
 ---
 
@@ -54,6 +55,7 @@ ZeroBank treats *going to zero* not as a failure, but as a **tradable market out
 To enable shorting immediately after launch, ZeroBank pre-allocates part of the meme token supply into a vault.
 
 The vault:
+
 - Holds meme tokens (for borrowing)
 - Accepts BNB as collateral
 - Issues vault shares following ERC-4626
@@ -75,6 +77,7 @@ Shorting flow:
 4. A meme-denominated debt position is created
 
 Position exposure:
+
 - Short meme
 - Long BNB
 
@@ -103,7 +106,6 @@ ZeroBank uses a **Health Factor** model to manage risk.
 
 #### Health Factor Formula
 
-
 - When `Health Factor >= 0.9`
   - Position becomes liquidatable
   - Liquidators can repay debt and receive collateral at a discount
@@ -124,6 +126,7 @@ This ensures system solvency during high volatility.
   - Resume after **10 seconds**
 
 This mechanism:
+
 - Gives liquidators time to act
 - Reduces oracle manipulation risk
 - Limits cascading liquidations
@@ -162,5 +165,3 @@ But every meme deserves a short.**
 ZeroBank is experimental software.  
 Meme markets are highly volatile and risky.  
 Use at your own risk.
-
-
