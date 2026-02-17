@@ -80,13 +80,6 @@ export const PositionsTable = () => {
   });
   console.log("allowance", allowance);
 
-  // Refetch position data after successful transaction
-  useEffect(() => {
-    if (isConfirmed && !isApproving) {
-      refetch();
-    }
-  }, [isConfirmed, refetch, isApproving]);
-
   const position = useMemo(() => {
     if (!positionData || !selectedBorrowToken) return null;
 

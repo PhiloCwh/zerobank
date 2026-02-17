@@ -2,13 +2,20 @@ import logo from "@src/assets/images/logo.png";
 import { useAccount, useBalance } from "wagmi";
 import { useAppKit } from "@reown/appkit/react";
 import { formatUnits } from "viem";
+import { Link, useLocation } from "react-router-dom";
 
 export const Header = () => {
   const { address, isConnected } = useAccount();
+  const location = useLocation();
   const { data: balance } = useBalance({
     address,
   });
   const { open } = useAppKit();
+
+  const navItems = [
+    { label: "Short", path: "/" },
+    { label: "Vault", path: "/vault" },
+  ];
 
   const handleConnect = () => {
     open();
@@ -30,13 +37,18 @@ export const Header = () => {
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
-          {["Short", "Vault"].map((item) => (
-            <button
-              key={item}
-              className="text-slate-400 hover:text-white font-medium transition-colors text-sm uppercase tracking-wide"
+          {navItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.path}
+              className={` transition-colors text-sm uppercase tracking-wide ${
+                location.pathname === item.path
+                  ? "text-white font-extrabold"
+                  : "text-slate-400 hover:text-white"
+              }`}
             >
-              {item}
-            </button>
+              {item.label}
+            </Link>
           ))}
         </nav>
       </div>
