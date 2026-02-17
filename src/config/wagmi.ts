@@ -1,6 +1,7 @@
 import { createAppKit } from "@reown/appkit/react";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { AppKitNetwork, bsc } from "@reown/appkit/networks";
+import { http } from "wagmi";
 
 // 1. Get projectId from https://cloud.reown.com
 export const projectId = "3067ff61ceca278da227a0327259f32d"; // TODO: Replace with your actual Project ID
@@ -16,6 +17,11 @@ export const networks = [bsc] as [AppKitNetwork, ...AppKitNetwork[]];
 export const wagmiAdapter = new WagmiAdapter({
   projectId,
   networks,
+  transports: {
+    [bsc.id]: http(
+      "https://bnb-mainnet.g.alchemy.com/v2/ducClOoRWDB6SorYT5nyq",
+    ),
+  },
 });
 
 // 4. Create modal
