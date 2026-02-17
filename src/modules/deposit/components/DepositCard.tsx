@@ -1,17 +1,14 @@
 import React, { useState } from "react";
 import { ArrowDown, ChevronDown } from "lucide-react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
+
 import { VALUETOKENOBJECTS } from "../../../const";
 import { TokenSearchModal } from "./TokenSearchModal";
 import { Token } from "../../../interface";
-import { formatUnits } from "viem";
-import { useBalance, useConnection } from "wagmi";
+import { formatUnits, parseUnits, Address } from "viem";
+import { useBalance, useConnection, useReadContract } from "wagmi";
 import { useDepositStore } from "../store";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../../const";
+import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
 
 const TokenInput = ({
   label,
@@ -20,6 +17,7 @@ const TokenInput = ({
 
   maxButton = false,
   tokenSelector,
+  readOnly = false,
 }: {
   label: string;
   amount: string;
@@ -27,6 +25,7 @@ const TokenInput = ({
 
   maxButton?: boolean;
   tokenSelector: React.ReactNode;
+  readOnly?: boolean;
 }) => {
   const { address } = useConnection();
   const { data: balance } = useBalance({
@@ -57,6 +56,7 @@ const TokenInput = ({
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0"
             className="w-full bg-transparent text-white text-lg font-mono p-3 outline-none placeholder:text-slate-600"
+            readOnly={readOnly}
           />
 
           <div className="flex items-center gap-2 pr-2">
@@ -79,7 +79,7 @@ const TokenInput = ({
 
 export const DepositCard = () => {
   const [depositAmount, setDepositAmount] = useState("");
-  const [borrowAmount, setBorrowAmount] = useState("");
+  const ltv = 50; // Mock LTV
 
   const [selectedDepositToken, setSelectedDepositToken] = useState<Token>(
     VALUETOKENOBJECTS[0],
@@ -90,7 +90,31 @@ export const DepositCard = () => {
   const [isDepositDropdownOpen, setIsDepositDropdownOpen] = useState(false);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
 
-  const ltv = 50; // Mock LTV
+  const { data: borrowAmountData } = useReadContract({
+    address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+    abi: ZeroBankABI,
+    functionName: "calStakeEthBorrowAssetAmount",
+    args: [
+      selectedBorrowToken?.address as Address,
+      depositAmount ? parseUnits(depositAmount, 18) : 0n,
+      BigInt(ltv),
+    ],
+    query: {
+      enabled:
+        !!selectedBorrowToken?.address &&
+        !!depositAmount &&
+        !isNaN(Number(depositAmount)) &&
+        Number(depositAmount) > 0,
+    },
+  });
+
+  const borrowAmount = borrowAmountData
+    ? formatUnits(
+        borrowAmountData as bigint,
+        selectedBorrowToken?.decimals || 18,
+      )
+    : "";
+
   const fee = 0; // Mock Fee
 
   return (
@@ -183,18 +207,16 @@ export const DepositCard = () => {
             <TokenInput
               label="Borrow Asset"
               amount={borrowAmount}
-              setAmount={setBorrowAmount}
+              setAmount={() => {}}
+              readOnly={true}
               tokenSelector={
                 <button
                   onClick={() => setIsBorrowModalOpen(true)}
                   className="flex items-center gap-2 bg-[#1A1B2E] hover:bg-[#252640] text-white px-3 py-1.5 rounded-md border border-slate-700 transition-colors min-w-[120px] justify-between"
                 >
                   {selectedBorrowToken ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px]">
-                        {selectedBorrowToken.symbol[0]}
-                      </div>
-                      <span className="font-bold text-sm">
+                    <div className="flex items-center gap-2  ">
+                      <span className="font-bold text-sm truncate max-w-20 block">
                         {selectedBorrowToken.symbol}
                       </span>
                     </div>

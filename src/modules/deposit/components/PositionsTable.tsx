@@ -1,15 +1,10 @@
 import { useMemo } from "react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
 import { useDepositStore } from "../store";
 import { useConnection, useReadContract } from "wagmi";
 import { formatUnits, Address } from "viem";
 import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
 import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../../const";
-
-function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
-}
+import { cn } from "@src/lib/cn";
 
 export const PositionsTable = () => {
   const { selectedBorrowToken } = useDepositStore();
