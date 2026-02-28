@@ -10,4 +10,6 @@ export interface TokenSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelect: (token: Token) => void;
+  showPoolInfo?: boolean;
+  hideBasicInfo?: boolean;
 }

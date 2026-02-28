@@ -339,6 +339,8 @@ export const DepositCard = () => {
         isOpen={isBorrowModalOpen}
         onClose={() => setIsBorrowModalOpen(false)}
         onSelect={(token) => setSelectedBorrowToken(token)}
+        showPoolInfo={true}
+        hideBasicInfo={true}
       />
     </div>
   );

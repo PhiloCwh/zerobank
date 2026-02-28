@@ -19,6 +19,8 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
   isOpen,
   onClose,
   onSelect,
+  showPoolInfo,
+  hideBasicInfo,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<TokenWithPool[]>([]);
@@ -26,31 +28,38 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
   // Validate address format
   const isValidAddress = isAddress(searchQuery);
 
+  const baseContracts = [
+    {
+      address: searchQuery as Address,
+      abi: erc20Abi,
+      functionName: "symbol",
+    },
+    {
+      address: searchQuery as Address,
+      abi: erc20Abi,
+      functionName: "name",
+    },
+    {
+      address: searchQuery as Address,
+      abi: erc20Abi,
+      functionName: "decimals",
+    },
+  ];
+
+  const poolInfoContract = {
+    address: ZEROBANK_LAUNCHPAD_ADDRESS,
+    abi: ZeroBankABI,
+    functionName: "tokenPoolInfo",
+    args: [searchQuery as Address],
+  };
+
+  const contracts = showPoolInfo
+    ? [poolInfoContract, ...baseContracts]
+    : baseContracts;
+
   const { data: contractData, isLoading: isContractLoading } = useReadContracts(
     {
-      contracts: [
-        {
-          address: ZEROBANK_LAUNCHPAD_ADDRESS,
-          abi: ZeroBankABI,
-          functionName: "tokenPoolInfo",
-          args: [searchQuery as Address],
-        },
-        {
-          address: searchQuery as Address,
-          abi: erc20Abi,
-          functionName: "symbol",
-        },
-        {
-          address: searchQuery as Address,
-          abi: erc20Abi,
-          functionName: "name",
-        },
-        {
-          address: searchQuery as Address,
-          abi: erc20Abi,
-          functionName: "decimals",
-        },
-      ],
+      contracts: contracts as any,
       query: {
         enabled: isOpen && isValidAddress,
       },
@@ -72,31 +81,42 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
     }
 
     if (contractData) {
-      const [poolInfoResult, symbolResult, nameResult, decimalsResult] =
-        contractData;
+      let poolInfoResult;
+      let symbolResult, nameResult, decimalsResult;
+
+      if (showPoolInfo) {
+        [poolInfoResult, symbolResult, nameResult, decimalsResult] =
+          contractData;
+      } else {
+        [symbolResult, nameResult, decimalsResult] = contractData;
+      }
 
       if (
-        poolInfoResult.status === "success" &&
-        symbolResult.status === "success" &&
-        decimalsResult.status === "success"
+        symbolResult?.status === "success" &&
+        decimalsResult?.status === "success"
       ) {
-        const [ethVault, tokenVault, borrowedTokenAmount, borrowedRate] =
-          poolInfoResult.result as [bigint, bigint, bigint, bigint];
+        let poolInfo;
+
+        if (showPoolInfo && poolInfoResult?.status === "success") {
+          const [ethVault, tokenVault, borrowedTokenAmount, borrowedRate] =
+            poolInfoResult.result as [bigint, bigint, bigint, bigint];
+          poolInfo = {
+            ethVault,
+            tokenVault,
+            borrowedTokenAmount,
+            borrowedRate,
+          };
+        }
 
         const newToken: TokenWithPool = {
           name:
-            nameResult.status === "success"
+            nameResult?.status === "success"
               ? (nameResult.result as string)
               : "Unknown Token",
           symbol: symbolResult.result as string,
           decimals: decimalsResult.result as number,
           address: searchQuery,
-          poolInfo: {
-            ethVault,
-            tokenVault,
-            borrowedTokenAmount,
-            borrowedRate,
-          },
+          poolInfo,
         };
         setSearchResults([newToken]);
       } else {
@@ -161,71 +181,80 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
                     }}
                     className="w-full p-3 rounded-lg hover:bg-white/5 transition-colors group text-left border border-transparent hover:border-slate-700"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white">
-                          {token.symbol[0]}
-                        </div>
-                        <div>
-                          <div className="text-white font-medium">
-                            {token.symbol}
+                    {!hideBasicInfo && (
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                            {token.symbol[0]}
                           </div>
-                          <div className="text-xs text-slate-400 group-hover:text-slate-300">
-                            {token.name}
+                          <div>
+                            <div className="text-white font-medium">
+                              {token.symbol}
+                            </div>
+                            <div className="text-xs text-slate-400 group-hover:text-slate-300">
+                              {token.name}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      {token.address && (
-                        <div className="text-xs text-slate-500 font-mono">
-                          {token.address.slice(0, 6)}...
-                          {token.address.slice(-4)}
-                        </div>
-                      )}
-                    </div>
-
-                    {token.poolInfo && (
-                      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/50 text-xs">
-                        <div>
-                          <span className="text-slate-500 block">
-                            ETH Vault
-                          </span>
-                          <span className="text-slate-300 font-mono">
-                            {formatUnits(token.poolInfo.ethVault, 18)} ETH
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">
-                            Token Vault
-                          </span>
-                          <span className="text-slate-300 font-mono">
-                            {formatUnits(
-                              token.poolInfo.tokenVault,
-                              token.decimals,
-                            )}{" "}
-                            {token.symbol}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Borrowed</span>
-                          <span className="text-slate-300 font-mono">
-                            {formatUnits(
-                              token.poolInfo.borrowedTokenAmount,
-                              token.decimals,
-                            )}{" "}
-                            {token.symbol}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="text-slate-500 block">Rate</span>
-                          <span className="text-slate-300 font-mono">
-                            {(
-                              Number(token.poolInfo.borrowedRate) / 100
-                            ).toFixed(2)}
-                            %
-                          </span>
-                        </div>
+                        {token.address && (
+                          <div className="text-xs text-slate-500 font-mono">
+                            {token.address.slice(0, 6)}...
+                            {token.address.slice(-4)}
+                          </div>
+                        )}
                       </div>
                     )}
+
+                    {showPoolInfo &&
+                      (token.poolInfo ? (
+                        <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/50 text-xs">
+                          <div>
+                            <span className="text-slate-500 block">
+                              ETH Vault
+                            </span>
+                            <span className="text-slate-300 font-mono">
+                              {formatUnits(token.poolInfo.ethVault, 18)} ETH
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">
+                              Token Vault
+                            </span>
+                            <span className="text-slate-300 font-mono">
+                              {formatUnits(
+                                token.poolInfo.tokenVault,
+                                token.decimals,
+                              )}{" "}
+                              {token.symbol}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">
+                              Borrowed
+                            </span>
+                            <span className="text-slate-300 font-mono">
+                              {formatUnits(
+                                token.poolInfo.borrowedTokenAmount,
+                                token.decimals,
+                              )}{" "}
+                              {token.symbol}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="text-slate-500 block">Rate</span>
+                            <span className="text-slate-300 font-mono">
+                              {(
+                                Number(token.poolInfo.borrowedRate) / 100
+                              ).toFixed(2)}
+                              %
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-2 pt-2 border-t border-slate-800/50 text-xs text-center text-slate-500">
+                          No vault available
+                        </div>
+                      ))}
                   </button>
                 ))}
               </div>
