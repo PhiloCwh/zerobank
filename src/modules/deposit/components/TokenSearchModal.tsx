@@ -175,11 +175,17 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
                 {searchResults.map((token, index) => (
                   <button
                     key={index}
+                    disabled={showPoolInfo && !token.poolInfo}
                     onClick={() => {
+                      if (showPoolInfo && !token.poolInfo) return;
                       onSelect(token);
                       onClose();
                     }}
-                    className="w-full p-3 rounded-lg hover:bg-white/5 transition-colors group text-left border border-transparent hover:border-slate-700"
+                    className={`w-full p-3 rounded-lg transition-colors group text-left border border-transparent ${
+                      showPoolInfo && !token.poolInfo
+                        ? "opacity-50 cursor-not-allowed"
+                        : "hover:bg-white/5 hover:border-slate-700 cursor-pointer"
+                    }`}
                   >
                     {!hideBasicInfo && (
                       <div className="flex items-center justify-between mb-2">
@@ -210,10 +216,10 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
                         <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/50 text-xs">
                           <div>
                             <span className="text-slate-500 block">
-                              ETH Vault
+                              BNB Vault
                             </span>
                             <span className="text-slate-300 font-mono">
-                              {formatUnits(token.poolInfo.ethVault, 18)} ETH
+                              {formatUnits(token.poolInfo.ethVault, 18)} BNB
                             </span>
                           </div>
                           <div>

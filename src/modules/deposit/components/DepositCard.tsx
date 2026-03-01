@@ -333,6 +333,54 @@ export const DepositCard = () => {
         >
           {isPending || isConfirming ? "Confirming..." : "Short Asset"}
         </button>
+
+        {selectedBorrowToken && (
+          <div className="mt-6">
+            {selectedBorrowToken.poolInfo ? (
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800/50 text-xs">
+                <div>
+                  <span className="text-slate-500 block mb-1">BNB Vault</span>
+                  <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                    {formatUnits(selectedBorrowToken.poolInfo.ethVault, 18)} BNB
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block mb-1">Token Vault</span>
+                  <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                    {formatUnits(
+                      selectedBorrowToken.poolInfo.tokenVault,
+                      selectedBorrowToken.decimals,
+                    )}{" "}
+                    {selectedBorrowToken.symbol}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block mb-1">Borrowed</span>
+                  <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                    {formatUnits(
+                      selectedBorrowToken.poolInfo.borrowedTokenAmount,
+                      selectedBorrowToken.decimals,
+                    )}{" "}
+                    {selectedBorrowToken.symbol}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-500 block mb-1">Rate</span>
+                  <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                    {(
+                      Number(selectedBorrowToken.poolInfo.borrowedRate) / 100
+                    ).toFixed(2)}
+                    %
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="pt-4 border-t border-slate-800/50 text-xs text-center text-slate-500">
+                No vault available for this token
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <TokenSearchModal

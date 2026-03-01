@@ -4,6 +4,12 @@ export interface Token {
   decimals: number;
   address?: string;
   imgsrc?: string;
+  poolInfo?: {
+    ethVault: bigint;
+    tokenVault: bigint;
+    borrowedTokenAmount: bigint;
+    borrowedRate: bigint;
+  };
 }
 
 export interface TokenSearchModalProps {

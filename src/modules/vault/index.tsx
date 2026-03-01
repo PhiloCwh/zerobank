@@ -185,7 +185,6 @@ const VaultPage = () => {
           Unstake
         </button>
       </div>
-
       {/* Content */}
       {activeTab === "stake" ? (
         <div className="w-full max-w-md relative bg-[#151320] border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-hidden">
@@ -244,7 +243,6 @@ const VaultPage = () => {
           userShare={userShare}
         />
       )}
-
       {/* Position Info */}
       <div className="w-full max-w-md bg-[#0D0B14] border border-slate-800 rounded-xl p-6">
         <h3 className="text-slate-400 text-sm font-mono uppercase mb-4">
@@ -263,6 +261,43 @@ const VaultPage = () => {
         </div>
 
         {/* Additional info can be added here */}
+        {selectedToken?.poolInfo && (
+          <div className="grid grid-cols-2 gap-4 pt-4 mt-4 border-t border-slate-800/50 text-xs">
+            <div>
+              <span className="text-slate-500 block mb-1">BNB Vault</span>
+              <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                {formatUnits(selectedToken.poolInfo.ethVault, 18)} BNB
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500 block mb-1">Token Vault</span>
+              <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                {formatUnits(
+                  selectedToken.poolInfo.tokenVault,
+                  selectedToken.decimals,
+                )}{" "}
+                {selectedToken.symbol}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500 block mb-1">Borrowed</span>
+              <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                {formatUnits(
+                  selectedToken.poolInfo.borrowedTokenAmount,
+                  selectedToken.decimals,
+                )}{" "}
+                {selectedToken.symbol}
+              </span>
+            </div>
+            <div>
+              <span className="text-slate-500 block mb-1">Rate</span>
+              <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
+                {(Number(selectedToken.poolInfo.borrowedRate) / 100).toFixed(2)}
+                %
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       <TokenSearchModal
@@ -272,6 +307,7 @@ const VaultPage = () => {
           setSelectedToken(token);
           setAmount("");
         }}
+        showPoolInfo={true}
       />
     </main>
   );
