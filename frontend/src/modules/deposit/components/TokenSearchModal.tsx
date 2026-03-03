@@ -173,47 +173,49 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
             ) : (
               <div className="space-y-2">
                 {searchResults.map((token, index) => (
-                  <button
-                    key={index}
-                    disabled={hideBasicInfo}
-                    onClick={() => {
-                      if (hideBasicInfo && !token.poolInfo) return;
-                      onSelect(token);
-                      onClose();
-                    }}
-                    className={`w-full p-3 rounded-lg transition-colors group text-left border border-transparent ${
-                      hideBasicInfo && !token.poolInfo
-                        ? "opacity-50 cursor-not-allowed"
-                        : "hover:bg-white/5 hover:border-slate-700 cursor-pointer"
-                    }`}
-                  >
-                    {!hideBasicInfo && (
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white">
-                            {token.symbol[0]}
-                          </div>
-                          <div>
-                            <div className="text-white font-medium">
-                              {token.symbol}
+                  <div key={index} className="space-y-2">
+                    {!hideBasicInfo && !token.poolInfo && (
+                      <button
+                        onClick={() => {
+                          onSelect(token);
+                          onClose();
+                        }}
+                        className="w-full p-3 rounded-lg transition-colors group text-left border border-transparent hover:bg-white/5 hover:border-slate-700 cursor-pointer bg-[#1A1B2E]"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-xs font-bold text-white">
+                              {token.symbol[0]}
                             </div>
-                            <div className="text-xs text-slate-400 group-hover:text-slate-300">
-                              {token.name}
+                            <div>
+                              <div className="text-white font-medium">
+                                {token.symbol}
+                              </div>
+                              <div className="text-xs text-slate-400 group-hover:text-slate-300">
+                                {token.name}
+                              </div>
                             </div>
                           </div>
+                          {token.address && (
+                            <div className="text-xs text-slate-500 font-mono">
+                              {token.address.slice(0, 6)}...
+                              {token.address.slice(-4)}
+                            </div>
+                          )}
                         </div>
-                        {token.address && (
-                          <div className="text-xs text-slate-500 font-mono">
-                            {token.address.slice(0, 6)}...
-                            {token.address.slice(-4)}
-                          </div>
-                        )}
-                      </div>
+                      </button>
                     )}
 
-                    {showPoolInfo &&
-                      (token.poolInfo ? (
-                        <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-slate-800/50 text-xs">
+                    {showPoolInfo && token.poolInfo ? (
+                      <button
+                        onClick={() => {
+                          if (!token.poolInfo) return;
+                          onSelect(token);
+                          onClose();
+                        }}
+                        className={`w-full p-3 rounded-lg transition-colors group text-left border border-transparent ${"hover:bg-white/5 hover:border-slate-700 cursor-pointer bg-[#1A1B2E]"}`}
+                      >
+                        <div className="grid grid-cols-2 gap-2 text-xs">
                           <div>
                             <span className="text-slate-500 block">
                               BNB Vault
@@ -256,12 +258,13 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
                             </span>
                           </div>
                         </div>
-                      ) : (
-                        <div className="mt-2 pt-2 border-t border-slate-800/50 text-xs text-center text-slate-500">
-                          No vault available
-                        </div>
-                      ))}
-                  </button>
+                      </button>
+                    ) : (
+                      <div className="text-xs text-center text-slate-500">
+                        No vault available
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}
