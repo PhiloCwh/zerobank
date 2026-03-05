@@ -1,11 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import {
   useWriteContract,
   useWaitForTransactionReceipt,
-  useReadContract,
-  useConnection,
 } from "wagmi";
-import { Address, erc20Abi, maxUint256 } from "viem";
+import { Address } from "viem";
 import { toast } from "sonner";
 import { cn } from "@src/lib/cn";
 import { ZEROBANK_ADDRESS } from "../../../const";
@@ -18,9 +16,6 @@ interface PositionRowProps {
 }
 
 export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
-  const { address } = useConnection();
-  const [isApproving, setIsApproving] = useState(false);
-
   const {
     writeContract,
     data: hash,
@@ -33,54 +28,21 @@ export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
       hash,
     });
 
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: position.token.address as Address,
-    abi: erc20Abi,
-    functionName: "allowance",
-    args: [address as Address, ZEROBANK_ADDRESS as Address],
-    query: {
-      enabled: !!address && !!position.token.address,
-    },
-  });
-
-  const needsApproval = useMemo(() => {
-    if (allowance === undefined) return true;
-    if (position.side !== "Borrow") return false;
-    return allowance < position.raw.userBorrowedTokenAmount;
-  }, [position, allowance]);
 
   useEffect(() => {
     if (isConfirming) {
       toast.loading("Transaction pending...", { id: "close-position" });
     }
     if (isConfirmed) {
-      toast.success(
-        isApproving
-          ? "Approved successfully!"
-          : "Position closed successfully!",
-        { id: "close-position" },
-      );
-      if (isApproving) {
-        setIsApproving(false);
-        refetchAllowance();
-      } else {
-        onSuccess();
-      }
+      toast.success("Position closed successfully!", { id: "close-position" });
+      onSuccess();
     }
     if (writeError) {
       toast.error(`Transaction failed: ${writeError.message}`, {
         id: "close-position",
       });
-      setIsApproving(false);
     }
-  }, [
-    isConfirming,
-    isConfirmed,
-    writeError,
-    isApproving,
-    onSuccess,
-    refetchAllowance,
-  ]);
+  }, [isConfirming, isConfirmed, writeError, onSuccess]);
 
   const handleClose = () => {
     try {
@@ -92,27 +54,16 @@ export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
           args: [position.token.address, position.raw.userStakeTokenAmount],
         });
       } else if (position.side === "Borrow") {
-        if (needsApproval) {
-          setIsApproving(true);
-          writeContract({
-            address: position.token.address as Address,
-            abi: erc20Abi,
-            functionName: "approve",
-            args: [ZEROBANK_ADDRESS as Address, maxUint256],
-          });
-        } else {
-          writeContract({
-            address: ZEROBANK_ADDRESS as Address,
-            abi: ZeroBankABI,
-            functionName: "repayAllToken",
-            args: [position.token.address],
-          });
-        }
+        writeContract({
+          address: ZEROBANK_ADDRESS as Address,
+          abi: ZeroBankABI,
+          functionName: "closeTokenPosition",
+          args: [position.token.address],
+        });
       }
     } catch (error) {
       console.error("Failed to close position:", error);
       toast.error("Failed to initiate transaction");
-      setIsApproving(false);
     }
   };
 
@@ -136,13 +87,7 @@ export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
             onClick={handleClose}
             disabled={isProcessing}
           >
-            {isProcessing
-              ? isApproving
-                ? "Approving..."
-                : "Processing..."
-              : needsApproval
-                ? "Approve"
-                : "Close"}
+            {isProcessing ? "Processing..." : "Close"}
           </button>
         </div>
       </td>

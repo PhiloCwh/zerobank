@@ -31,6 +31,7 @@ export const Unstake = ({
 }: UnstakeProps) => {
   const [amount, setAmount] = useState("");
   const queryClient = useQueryClient();
+  console.log("vaultBalance", vaultBalance);
 
   const {
     writeContract: writeUnstake,

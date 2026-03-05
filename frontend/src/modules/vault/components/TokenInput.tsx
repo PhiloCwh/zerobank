@@ -42,7 +42,10 @@ export const TokenInput = ({
           <input
             type="text"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "" || /^\d*\.?\d*$/.test(val)) setAmount(val);
+            }}
             placeholder="0"
             className="flex-1 w-0 bg-transparent text-white text-lg font-mono p-3 outline-none placeholder:text-slate-600"
             readOnly={readOnly}

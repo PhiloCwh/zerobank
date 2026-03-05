@@ -51,28 +51,30 @@ const VaultPage = () => {
         args: [address as Address, selectedToken?.address as Address],
       },
       {
-        address: ZEROBANK_ADDRESS as Address, 
+        address: ZEROBANK_ADDRESS as Address,
         abi: ZeroBankABI,
         functionName: "stakingReserve",
         args: [selectedToken?.address as Address],
       },
       {
-        address: ZEROBANK_ADDRESS as Address, 
+        address: ZEROBANK_ADDRESS as Address,
         abi: ZeroBankABI,
         functionName: "stakeTokenShareTotalSupply",
         args: [selectedToken?.address as Address],
       },
       {
-        address: ZEROBANK_ADDRESS as Address, 
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [ZEROBANK_ADDRESS as Address],
+        address: ZEROBANK_ADDRESS as Address,
+        abi: ZeroBankABI,
+        functionName: "realReserve",
+        args: [selectedToken?.address as Address],
       },
     ],
     query: {
       enabled: !!address && !!selectedToken?.address,
     },
   });
+
+  console.log("realReserve", stakingData?.[3]?.result);
 
   const { data: allowance } = useReadContract({
     address: selectedToken?.address as Address,
@@ -162,6 +164,7 @@ const VaultPage = () => {
   const totalReserve = (stakingData?.[1]?.result as bigint) || BigInt(0);
   const totalSupply = (stakingData?.[2]?.result as bigint) || BigInt(0);
   const vaultBalance = (stakingData?.[3]?.result as bigint) || BigInt(0);
+  console.log("vaultBalance", vaultBalance);
 
   const stakedAmountRaw =
     totalSupply === BigInt(0)
@@ -241,6 +244,7 @@ const VaultPage = () => {
                   <ChevronDown size={14} className="text-slate-400" />
                 </button>
               }
+              
             />
 
             <button

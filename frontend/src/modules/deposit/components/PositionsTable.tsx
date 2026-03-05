@@ -22,6 +22,7 @@ export const PositionsTable = () => {
 
   const { tokens, isLoading: isTokensLoading } = useUserTokens(tokenAddresses);
 
+  console.log("tokens", tokens);
   const {
     positions,
     isLoading: isPositionsLoading,
@@ -30,6 +31,7 @@ export const PositionsTable = () => {
 
   const isLoading = isBackendLoading || isTokensLoading || isPositionsLoading;
 
+  console.log("positions", positions);
   return (
     <div className="w-full bg-[#151320] border border-slate-800 rounded-2xl p-6 shadow-2xl overflow-hidden">
       <div className="flex items-center justify-between mb-6">

@@ -63,7 +63,10 @@ const TokenInput = ({
           <input
             type="text"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val === "" || /^\d*\.?\d*$/.test(val)) setAmount(val);
+            }}
             placeholder="0"
             className="w-full bg-transparent text-white text-lg font-mono p-3 outline-none placeholder:text-slate-600"
             readOnly={readOnly}
@@ -101,21 +104,20 @@ export const DepositCard = () => {
   const [isDepositDropdownOpen, setIsDepositDropdownOpen] = useState(false);
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
 
+  const isValidDepositAmount =
+    !!depositAmount && !isNaN(Number(depositAmount)) && Number(depositAmount) > 0;
+
   const { data: borrowAmountData } = useReadContract({
-    address: ZEROBANK_ADDRESS as Address,       
+    address: ZEROBANK_ADDRESS as Address,
     abi: ZeroBankABI,
     functionName: "calStakeEthBorrowAssetAmount",
     args: [
       selectedBorrowToken?.address as Address,
-      depositAmount ? parseUnits(depositAmount, 18) : 0n,
+      isValidDepositAmount ? parseUnits(depositAmount, 18) : 0n,
       BigInt(ltv),
     ],
     query: {
-      enabled:
-        !!selectedBorrowToken?.address &&
-        !!depositAmount &&
-        !isNaN(Number(depositAmount)) &&
-        Number(depositAmount) > 0,
+      enabled: !!selectedBorrowToken?.address && isValidDepositAmount,
     },
   });
 
@@ -126,20 +128,21 @@ export const DepositCard = () => {
       )
     : "";
 
-  const { data: feeData } = useReadContract({
-    address: ZEROBANK_ADDRESS as Address, 
+  const { data: feeData, error: feeError } = useReadContract({
+    address: ZEROBANK_ADDRESS as Address,
     abi: ZeroBankABI,
     functionName: "calBorrowFee",
     args: [
       selectedBorrowToken?.address as Address,
-      borrowAmountData ? (borrowAmountData as bigint) : 0n,
+      borrowAmountData !== undefined ? (borrowAmountData as bigint) : 0n,
     ],
     query: {
-      enabled: !!selectedBorrowToken?.address,
+      enabled: !!selectedBorrowToken?.address && borrowAmountData !== undefined,
     },
   });
+  console.log("borrowAmountData", borrowAmountData, "feeData", feeData, "feeError", feeError);
 
-  const fee = feeData ? (Number(feeData) / 100).toFixed(2) : "0.00";
+  const fee = feeData !== undefined ? (Number(feeData) / 100).toFixed(2) : "0.00";
 
   const queryClient = useQueryClient();
   const {

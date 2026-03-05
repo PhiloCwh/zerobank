@@ -27,6 +27,7 @@ export interface PositionData {
 
 export const useUserPositions = (tokens: Token[]) => {
   const { address } = useConnection();
+  console.log("tokens", tokens);
 
   const {
     data: positionsData,
@@ -45,6 +46,8 @@ export const useUserPositions = (tokens: Token[]) => {
       staleTime: 1000 * 30, // 30 seconds
     },
   });
+
+  console.log("positionsData", positionsData);
 
   const positions = useMemo(() => {
     if (!positionsData) return [];
