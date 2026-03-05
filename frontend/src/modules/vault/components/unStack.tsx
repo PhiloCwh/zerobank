@@ -6,7 +6,7 @@ import { parseUnits, formatUnits, Address } from "viem";
 import { useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 
 import { Token } from "../../../interface";
-import { ZEROBANK_LAUNCHPAD_ADDRESS } from "@src/const";
+import { ZEROBANK_ADDRESS } from "@src/const";
 import ZeroBankABI from "@src/assets/abis/ZeroBank.json";
 import { TokenInput } from "./TokenInput";
 
@@ -66,7 +66,7 @@ export const Unstake = ({
     console.log("Unstake Amount:", amount, "BigInt:", amountBigInt.toString());
 
     writeUnstake({
-      address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+      address: ZEROBANK_ADDRESS as Address,
       abi: ZeroBankABI,
       functionName: "unStakeToken",
       args: [selectedToken.address as Address, amountBigInt],

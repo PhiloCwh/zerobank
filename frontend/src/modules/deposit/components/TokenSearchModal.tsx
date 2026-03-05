@@ -3,7 +3,7 @@ import { X, Search, Loader2 } from "lucide-react";
 import { useReadContracts } from "wagmi";
 import { formatUnits, isAddress, erc20Abi, Address } from "viem";
 import { Token, TokenSearchModalProps } from "../../../interface";
-import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../../const";
+import { ZEROBANK_ADDRESS } from "../../../const";
 import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
 
 interface TokenWithPool extends Token {
@@ -47,7 +47,7 @@ export const TokenSearchModal: React.FC<TokenSearchModalProps> = ({
   ];
 
   const poolInfoContract = {
-    address: ZEROBANK_LAUNCHPAD_ADDRESS,
+    address: ZEROBANK_ADDRESS as Address,
     abi: ZeroBankABI,
     functionName: "tokenPoolInfo",
     args: [searchQuery as Address],

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useConnection, useReadContracts } from "wagmi";
 import { Address, formatUnits, Abi } from "viem";
 import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
-import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../../const";
+import { ZEROBANK_ADDRESS } from "../../../const";
 import { Token } from "../../../interface";
 
 export interface PositionData {
@@ -34,7 +34,7 @@ export const useUserPositions = (tokens: Token[]) => {
     refetch,
   } = useReadContracts({
     contracts: tokens.map((token) => ({
-      address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+      address: ZEROBANK_ADDRESS as Address,
       abi: ZeroBankABI as Abi,
       functionName: "userPositionInfo",
       args: [address, token.address],

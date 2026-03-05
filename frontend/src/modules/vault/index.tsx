@@ -12,7 +12,7 @@ import {
 } from "wagmi";
 
 import { Token } from "../../interface";
-import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../const";
+import { ZEROBANK_ADDRESS } from "../../const";
 import ZeroBankABI from "../../assets/abis/ZeroBank.json";
 import { TokenSearchModal } from "../deposit/components/TokenSearchModal";
 import { TokenInput } from "./components/TokenInput";
@@ -45,28 +45,28 @@ const VaultPage = () => {
   const { data: stakingData, isLoading: isPositionLoading } = useReadContracts({
     contracts: [
       {
-        address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+        address: ZEROBANK_ADDRESS as Address,
         abi: ZeroBankABI,
         functionName: "userStakeTokenShare",
         args: [address as Address, selectedToken?.address as Address],
       },
       {
-        address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+        address: ZEROBANK_ADDRESS as Address, 
         abi: ZeroBankABI,
         functionName: "stakingReserve",
         args: [selectedToken?.address as Address],
       },
       {
-        address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+        address: ZEROBANK_ADDRESS as Address, 
         abi: ZeroBankABI,
         functionName: "stakeTokenShareTotalSupply",
         args: [selectedToken?.address as Address],
       },
       {
-        address: selectedToken?.address as Address,
+        address: ZEROBANK_ADDRESS as Address, 
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [ZEROBANK_LAUNCHPAD_ADDRESS as Address],
+        args: [ZEROBANK_ADDRESS as Address],
       },
     ],
     query: {
@@ -78,7 +78,7 @@ const VaultPage = () => {
     address: selectedToken?.address as Address,
     abi: erc20Abi,
     functionName: "allowance",
-    args: [address as Address, ZEROBANK_LAUNCHPAD_ADDRESS as Address],
+    args: [address as Address, ZEROBANK_ADDRESS as Address],
     query: {
       enabled: !!address && !!selectedToken?.address,
     },
@@ -135,11 +135,11 @@ const VaultPage = () => {
         address: selectedToken?.address as Address,
         abi: erc20Abi,
         functionName: "approve",
-        args: [ZEROBANK_LAUNCHPAD_ADDRESS as Address, amountBigInt],
+        args: [ZEROBANK_ADDRESS as Address, amountBigInt],
       });
     } else {
       writeStake({
-        address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+        address: ZEROBANK_ADDRESS as Address,
         abi: ZeroBankABI,
         functionName: "stakeToken",
         args: [selectedToken?.address as Address, amountBigInt],

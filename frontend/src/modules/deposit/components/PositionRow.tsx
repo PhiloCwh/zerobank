@@ -8,7 +8,7 @@ import {
 import { Address, erc20Abi, maxUint256 } from "viem";
 import { toast } from "sonner";
 import { cn } from "@src/lib/cn";
-import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../../const";
+import { ZEROBANK_ADDRESS } from "../../../const";
 import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
 import { PositionData } from "../hooks/useUserPositions";
 
@@ -37,7 +37,7 @@ export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
     address: position.token.address as Address,
     abi: erc20Abi,
     functionName: "allowance",
-    args: [address as Address, ZEROBANK_LAUNCHPAD_ADDRESS as Address],
+    args: [address as Address, ZEROBANK_ADDRESS as Address],
     query: {
       enabled: !!address && !!position.token.address,
     },
@@ -86,7 +86,7 @@ export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
     try {
       if (position.side === "Stake") {
         writeContract({
-          address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+          address: ZEROBANK_ADDRESS as Address,
           abi: ZeroBankABI,
           functionName: "unStakeToken",
           args: [position.token.address, position.raw.userStakeTokenAmount],
@@ -98,11 +98,11 @@ export const PositionRow = ({ position, onSuccess }: PositionRowProps) => {
             address: position.token.address as Address,
             abi: erc20Abi,
             functionName: "approve",
-            args: [ZEROBANK_LAUNCHPAD_ADDRESS as Address, maxUint256],
+            args: [ZEROBANK_ADDRESS as Address, maxUint256],
           });
         } else {
           writeContract({
-            address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+            address: ZEROBANK_ADDRESS as Address,
             abi: ZeroBankABI,
             functionName: "repayAllToken",
             args: [position.token.address],

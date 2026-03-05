@@ -1,7 +1,11 @@
 [
   {
     "inputs": [
-      { "internalType": "address", "name": "_Feeto", "type": "address" },
+      {
+        "internalType": "address payable",
+        "name": "_Feeto",
+        "type": "address"
+      },
       { "internalType": "uint256", "name": "_lendFee", "type": "uint256" }
     ],
     "stateMutability": "nonpayable",
@@ -335,6 +339,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      { "internalType": "address", "name": "_token", "type": "address" }
+    ],
+    "name": "closeTokenPosition",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "_token", "type": "address" },
+      { "internalType": "uint256", "name": "maxSlippageBps", "type": "uint256" }
+    ],
+    "name": "closeTokenPositionBySli",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "ethBalance",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
@@ -438,6 +461,16 @@
     "type": "function"
   },
   {
+    "inputs": [
+      { "internalType": "address", "name": "_user", "type": "address" },
+      { "internalType": "address", "name": "_token", "type": "address" }
+    ],
+    "name": "liquidateUserPositionBySli",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "name": "lpClaim",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
@@ -515,13 +548,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "setTest",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
     "inputs": [
       { "internalType": "address", "name": "_token", "type": "address" },
       { "internalType": "uint256", "name": "_percent", "type": "uint256" },
@@ -580,14 +606,9 @@
   {
     "inputs": [],
     "name": "taxRecipient",
-    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "test",
-    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "outputs": [
+      { "internalType": "address payable", "name": "", "type": "address" }
+    ],
     "stateMutability": "view",
     "type": "function"
   },
@@ -702,16 +723,6 @@
       { "internalType": "address", "name": "", "type": "address" }
     ],
     "name": "userEthBalance",
-    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      { "internalType": "address", "name": "", "type": "address" },
-      { "internalType": "address", "name": "", "type": "address" }
-    ],
-    "name": "userLatestStakedTime",
     "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"

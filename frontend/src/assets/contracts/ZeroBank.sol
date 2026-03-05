@@ -1,24 +1,22 @@
-
-
 // SPDX-License-Identifier: MIT
 
 //ETH
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity ^0.8.17;
 
-contract zeroBankTest is Ownable{
+contract zeroBankV1 is Ownable, ReentrancyGuard{
 
 
 //global variable
 
-    address public taxRecipient;
+    address payable public taxRecipient;
     address public oracle;
     address public proxy;
     bool public liquidatePublic;
-    bool public test;
     uint public lenderFee;
     IUniswapV2Router02 public uniswapRouter = IUniswapV2Router02(0x10ED43C718714eb63d5aA57B78B54704E256024E);
     
@@ -32,6 +30,7 @@ contract zeroBankTest is Ownable{
 //borrow variable 
 
     uint constant ONE_ETH = 10 ** 18;
+    uint constant MINIMUM_LIQUIDITY = 1000;
     //address [] public createdTokenList;
     //borrow variable
     mapping (address => mapping (address => uint)) public userBorrowedAmount; //user token amount
@@ -43,7 +42,6 @@ contract zeroBankTest is Ownable{
     uint public ethReserveThreshold;
     mapping (address => uint) public stakingReserve;
     mapping (address => uint) public realReserve;
-    mapping (address => mapping (address => uint)) public userLatestStakedTime;
     mapping (address => mapping (address => uint)) public userStakeTokenShare;// user token share
     mapping (address => uint) public stakeTokenShareTotalSupply;
 
@@ -57,29 +55,19 @@ contract zeroBankTest is Ownable{
     event AddLiquidity(address indexed token,address indexed user, uint ethAmount,uint tokenAmount,uint time);
     event DeployToken(address token,string name,string symbol, address creator,string description, string image, string website,string twLink,string tgLink, uint ethAmount,uint tokenAmount,uint time);
 
-    constructor(address _Feeto,uint _lendFee)Ownable(msg.sender)
+    constructor(address payable _Feeto,uint _lendFee)Ownable(msg.sender)
     {
         lenderFee = _lendFee;
         taxRecipient = _Feeto;
-        test = true;
+
     }
 
     receive() payable external {}
 
-    modifier reEntrancyMutex() {
-        bool _reEntrancyMutex;
 
-        require(!_reEntrancyMutex,"FUCK");
-        _reEntrancyMutex = true;
-        _;
-        _reEntrancyMutex = false;
-
-    }
 
 //owner setting
-    function setTest() external onlyOwner {
-        test = !test;
-    }
+
 
     function setLiquidateWL(address _wl,bool _bool) external onlyOwner {
         liquidateQualification[_wl] = _bool;
@@ -118,38 +106,48 @@ contract zeroBankTest is Ownable{
 
 //质押逻辑
 
+function stakeToken(address _token, uint _amount) public {
 
+    require(_amount > 0, "zero amount");
 
-    function stakeToken(address _token, uint _amount) public {
-        
-        address user = msg.sender;
-        IERC20 token = IERC20(_token);      
-        token.transferFrom(user, address(this), _amount);
+    address user = msg.sender;
+    IERC20 token = IERC20(_token);
+    token.transferFrom(user, address(this), _amount);
 
-        uint share =   calShareAmount(_token,_amount);
+    uint totalShares = stakeTokenShareTotalSupply[_token];
+    uint share;
 
-        //userStakingReserve[user][_token] += _amount;
-        stakingReserve[_token] += _amount;
-        realReserve[_token] += _amount;
-        userStakeTokenShare[msg.sender][_token] += share;
+    if (totalShares == 0) {
+        require(_amount > MINIMUM_LIQUIDITY, "init too small");
+
+        // 正确的初始化
+        share = _amount - MINIMUM_LIQUIDITY;
+
+        // 锁死 MINIMUM_LIQUIDITY
+        userStakeTokenShare[address(0)][_token] = MINIMUM_LIQUIDITY;
+        stakeTokenShareTotalSupply[_token] = MINIMUM_LIQUIDITY + share;
+
+    } else {
+        uint totalAssets = stakingReserve[_token];
+        require(totalAssets > 0, "invalid reserve");
+
+        share = (_amount * totalShares) / totalAssets;
+        require(share > 0, "zero share");
 
         stakeTokenShareTotalSupply[_token] += share;
-        
     }
 
+    stakingReserve[_token] += _amount;
+    realReserve[_token] += _amount;
+    userStakeTokenShare[user][_token] += share;
+}
 
-    function stakeTokenInside(address _token, uint _amount) internal {
 
-        uint share = calShareAmount(_token,_amount);
 
-        //userStakingReserve[user][_token] += _amount;
-        stakingReserve[_token] += _amount;
-        realReserve[_token] += _amount;
-        userStakeTokenShare[address(this)][_token] += share;
 
-        stakeTokenShareTotalSupply[_token] += share;
-        
-    }
+
+
+
 
 
     function unStakeToken(address _token, uint _amount) public {
@@ -191,23 +189,39 @@ contract zeroBankTest is Ownable{
         }else if(borrowRate < 9000){
             fee = 10 * lenderFee;
         }else if(borrowRate < 9500){
-            fee = 30 * lenderFee;
+            fee = 20 * lenderFee;
         }else if(borrowRate < 9900){
-            fee = 50 * lenderFee;
+            fee = 30 * lenderFee;
         }else{
             revert("no token to lend");
         }
     }
 
-    function _beforeBorrow(address _token) internal view{
-        address uniswapPair = IUniswapV2Factory(uniswapRouter.factory()).getPair(_token,uniswapRouter.WETH());
-        // 获取流动性池的储备量
-        IUniswapV2Pair pair = IUniswapV2Pair(uniswapPair);
+    function _beforeBorrow(address _token) internal view {
+
+        address pairAddr = IUniswapV2Factory(uniswapRouter.factory())
+            .getPair(_token, uniswapRouter.WETH());
+
+        require(pairAddr != address(0), "pair not exist");
+
+        IUniswapV2Pair pair = IUniswapV2Pair(pairAddr);
+
         (uint112 reserve0, uint112 reserve1, ) = pair.getReserves();
 
-        // 确认代币是否为 token0 或 token1
-        uint112 tokenEthReserve = address(this) ==  uniswapRouter.WETH()? reserve0 : reserve1;
-        require(tokenEthReserve > ethReserveThreshold,"pool reserve not enought to reach threshold");
+        address token0 = pair.token0();
+        address token1 = pair.token1();
+
+        uint112 ethReserve;
+
+        if (token0 == uniswapRouter.WETH()) {
+            ethReserve = reserve0;
+        } else if (token1 == uniswapRouter.WETH()) {
+            ethReserve = reserve1;
+        } else {
+            revert("invalid pair");
+        }
+
+        require(ethReserve > ethReserveThreshold, "pool reserve too low");
     }
 
     function _userDepositETH(address _user,uint _ethAmount,address _assetType) internal{
@@ -230,16 +244,16 @@ contract zeroBankTest is Ownable{
         require(userBorrowedAmount[_user][_assetType] < maxBorrowAmount,"exceed 70% token to borrow ,pls add eth fund");   
     }
 
-    function addETHFund(address _assetType) public payable reEntrancyMutex() {
+    function addETHFund(address _assetType) public payable nonReentrant {
         uint ethAmount = msg.value;
         _userDepositETH(msg.sender,ethAmount, _assetType);
     }
 
-    function BorrowAsset(address _assetType, uint _assetAmount) public  reEntrancyMutex(){
+    function BorrowAsset(address _assetType, uint _assetAmount) public  nonReentrant{
         _userBorrowAsset(msg.sender, _assetType, _assetAmount);     
     }
 
-    function stakeEthBorrowAsset(address _token, uint _percent) public payable reEntrancyMutex {
+    function stakeEthBorrowAsset(address _token, uint _percent) public payable nonReentrant {
         require((_percent > 0)&&(_percent < 71),"require percent 0---100");
         uint amount = msg.value;
         require(amount > 0,"require more than 0wei");
@@ -261,7 +275,7 @@ contract zeroBankTest is Ownable{
     }
 
 
-    function shortToken(address _token,uint _percent,uint _dirSli) public payable reEntrancyMutex {
+    function shortToken(address _token,uint _percent,uint _dirSli) public payable nonReentrant {
         _beforeBorrow(_token);
         require((_percent > 0)&&(_percent < 71),"require percent 0---100");
         //get data
@@ -299,7 +313,7 @@ contract zeroBankTest is Ownable{
     }
 
 
-    function shortTokenByAmount(address _token,uint _amount,uint _dirSli) public payable reEntrancyMutex {
+    function shortTokenByAmount(address _token,uint _amount,uint _dirSli) public payable nonReentrant {
         //get data
         _beforeBorrow(_token);
         uint amount = msg.value;
@@ -357,9 +371,111 @@ contract zeroBankTest is Ownable{
     }
 
 
+function closeTokenPosition(address _token) public nonReentrant {
+
+    address payable user = payable(msg.sender);
+
+    uint debtAmount = userBorrowedAmount[user][_token];
+    require(debtAmount > 0, "no debt");
+
+    uint userETH = userEthBalance[user][_token];
+    require(userETH > 0, "no collateral");
+
+    address[] memory path = new address[](2);
+    path[0] = uniswapRouter.WETH();
+    path[1] = _token;
+
+    // 用用户的 ETH 买固定数量 token
+    uint[] memory amounts = uniswapRouter.swapETHForExactTokens{value: userETH}(
+        debtAmount,
+        path,
+        address(this),
+        block.timestamp
+    );
+
+    uint ethUsed = amounts[0];
+
+    // 如果实际用掉的 ETH 超过用户抵押，理论上会 revert
+    require(ethUsed <= userETH, "insufficient collateral");
+
+    // 计算剩余 ETH
+    uint refund = userETH - ethUsed;
+
+    // 更新系统状态
+    borrowedAmount[_token] -= debtAmount;
+    ethBalance[_token] -= userETH;
+    realReserve[_token] += debtAmount;
+
+    userBorrowedAmount[user][_token] = 0;
+    userEthBalance[user][_token] = 0;
+
+    // 把剩余 ETH 退还给用户
+    if (refund > 0) {
+        user.transfer(refund);
+    }
+}
+
+function closeTokenPositionBySli (
+    address _token,
+    uint256 maxSlippageBps // 例如 300 = 3%
+) public nonReentrant{
+
+    require(maxSlippageBps <= 5000, "slippage too high"); // 最大允许50%
+
+    address payable user = payable(msg.sender);
+
+    uint256 debtAmount = userBorrowedAmount[user][_token];
+    require(debtAmount > 0, "no debt");
+
+    uint256 userETH = userEthBalance[user][_token];
+    require(userETH > 0, "no collateral");
+
+    address[] memory path = new address[](2);
+    path[0] = uniswapRouter.WETH();
+    path[1] = _token;
+
+    // ===== Step 1: 预估需要多少 ETH =====
+    uint[] memory amountsIn = uniswapRouter.getAmountsIn(debtAmount, path);
+    uint256 requiredETH = amountsIn[0];
+
+    // ===== Step 2: 加入滑点容忍 =====
+    uint256 maxETHAllowed = requiredETH * (10000 + maxSlippageBps) / 10000;
+
+    require(maxETHAllowed <= userETH, "insufficient collateral");
+
+    // ===== Step 3: 执行 swap =====
+    uint[] memory swapResult = uniswapRouter.swapETHForExactTokens{value: maxETHAllowed}(
+        debtAmount,
+        path,
+        address(this),
+        block.timestamp + 60
+    );
+
+    uint256 ethUsed = swapResult[0];
+
+    // ===== Step 4: 计算退款 =====
+    uint256 refund = userETH - ethUsed;
+
+    // ===== Step 5: 更新协议状态 =====
+    borrowedAmount[_token] -= debtAmount;
+    ethBalance[_token] -= userETH;
+    realReserve[_token] += debtAmount;
+
+    userBorrowedAmount[user][_token] = 0;
+    userEthBalance[user][_token] = 0;
+
+    // ===== Step 6: 退回剩余 ETH =====
+    if (refund > 0) {
+        user.transfer(refund);
+    }
+}
+
+
+
+
 //清算逻辑
 
-    function liquidate(address _user,address _token) public {
+    function liquidate(address _user,address _token) public nonReentrant{
         if(!liquidatePublic){
             require(msg.sender == owner(),"liquidate didnt public now");
         }
@@ -373,7 +489,7 @@ contract zeroBankTest is Ownable{
 
         (,,,healthyFactor,,) = userPositionInfo(_user, _token);
 
-        require(healthyFactor > 8000,"require healthy factor > 8000");
+        require(healthyFactor > 9500,"require healthy factor > 9500");
 
         liquidator.transfer(userEthBalance[_user][_token] * 95 / 100);
         feeAddress.transfer(userEthBalance[_user][_token] * 5 / 100);
@@ -389,7 +505,7 @@ contract zeroBankTest is Ownable{
         userBorrowedAmount[_user][_token] = 0;
     }
 
-    function liquidateForWhiteList(address _user,address _token) public {
+    function liquidateForWhiteList(address _user,address _token) public nonReentrant{
         
         require(liquidateQualification[msg.sender] == true,"no");
         address payable feeAddress = payable (taxRecipient);
@@ -402,7 +518,7 @@ contract zeroBankTest is Ownable{
 
         (,,,healthyFactor,,) = userPositionInfo(_user, _token);
 
-        require(healthyFactor > 8000,"require healthy factor > 8000");
+        require(healthyFactor > 8500,"require healthy factor > 8500");
 
         liquidator.transfer(userEthBalance[_user][_token] * 95 / 100);
         feeAddress.transfer(userEthBalance[_user][_token] * 5 / 100);
@@ -416,6 +532,71 @@ contract zeroBankTest is Ownable{
         userEthBalance[_user][_token] = 0;
         userBorrowedAmount[_user][_token] = 0;
     }
+
+    function liquidateUserPositionBySli (
+        address _user, 
+        address _token
+    ) public nonReentrant{
+        require(liquidateQualification[msg.sender] == true,"no");
+        uint healthyFactor;
+
+        (,,,healthyFactor,,) = userPositionInfo(_user, _token);
+
+        require(healthyFactor > 8500,"require healthy factor > 8500");
+
+
+        address payable liquidator = payable (msg.sender);
+
+        address payable user = payable(_user);
+
+        uint256 debtAmount = userBorrowedAmount[user][_token];
+        require(debtAmount > 0, "no debt");
+
+        uint256 userETH = userEthBalance[user][_token];
+        require(userETH > 0, "no collateral");
+
+        address[] memory path = new address[](2);
+        path[0] = uniswapRouter.WETH();
+        path[1] = _token;
+
+        // ===== Step 1: 预估需要多少 ETH =====
+        uint[] memory amountsIn = uniswapRouter.getAmountsIn(debtAmount, path);
+        uint256 requiredETH = amountsIn[0];
+
+        // ===== Step 2: 加入滑点容忍 =====
+        uint256 maxETHAllowed = requiredETH * (11000) / 10000;
+
+        require(maxETHAllowed <= userETH, "insufficient collateral");
+
+        // ===== Step 3: 执行 swap =====
+        uint[] memory swapResult = uniswapRouter.swapETHForExactTokens{value: maxETHAllowed}(
+            debtAmount,
+            path,
+            address(this),
+            block.timestamp + 60
+        );
+
+        uint256 ethUsed = swapResult[0];
+
+        // ===== Step 4: 计算退款 =====
+        uint256 refund = userETH - ethUsed;
+
+        // ===== Step 5: 更新协议状态 =====
+        borrowedAmount[_token] -= debtAmount;
+        ethBalance[_token] -= userETH;
+        realReserve[_token] += debtAmount;
+
+        userBorrowedAmount[user][_token] = 0;
+        userEthBalance[user][_token] = 0;
+
+        // ===== Step 6: 退回剩余 ETH =====
+        if (refund > 0) {
+            liquidator.transfer(refund * 95 / 100);
+            taxRecipient.transfer(refund * 5 / 100);
+        }
+    }
+
+
 
 
 //读取数据
@@ -454,10 +635,20 @@ contract zeroBankTest is Ownable{
         }      
     }
 
-    function calShareAmount(address _token,uint _amount) public view returns(uint){
-        uint share = _amount * (stakeTokenShareTotalSupply[_token] + ONE_ETH) /(stakingReserve[_token] + ONE_ETH);
-        return share;
+
+
+function calShareAmount(address _token,uint _amount) public view returns(uint){
+    uint totalShares = stakeTokenShareTotalSupply[_token];
+    uint totalAssets = stakingReserve[_token];
+
+    if (totalShares == 0) {
+        return _amount;
     }
+
+    //require(totalAssets > 0, "invalid reserve");
+
+    return (_amount * totalShares) / totalAssets;
+}
 
     function calShareTokenUnstakeAmount(address _token, uint _share) public view returns(uint){
         return stakingReserve[_token] * _share / stakeTokenShareTotalSupply[_token];
@@ -498,4 +689,6 @@ interface IUniswapV2Factory {
 pragma solidity >=0.5.0;
 interface IUniswapV2Pair {
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast);
+    function token0() external view returns (address);
+    function token1() external view returns (address);
 }

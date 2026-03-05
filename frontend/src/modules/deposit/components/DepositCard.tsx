@@ -16,7 +16,7 @@ import {
   useAccount,
 } from "wagmi";
 import { useDepositStore } from "../store";
-import { ZEROBANK_LAUNCHPAD_ADDRESS } from "../../../const";
+import { ZEROBANK_ADDRESS } from "../../../const";
 import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
 import { createPosition } from "../../../services/positions";
 
@@ -102,7 +102,7 @@ export const DepositCard = () => {
   const [isBorrowModalOpen, setIsBorrowModalOpen] = useState(false);
 
   const { data: borrowAmountData } = useReadContract({
-    address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+    address: ZEROBANK_ADDRESS as Address,       
     abi: ZeroBankABI,
     functionName: "calStakeEthBorrowAssetAmount",
     args: [
@@ -127,7 +127,7 @@ export const DepositCard = () => {
     : "";
 
   const { data: feeData } = useReadContract({
-    address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+    address: ZEROBANK_ADDRESS as Address, 
     abi: ZeroBankABI,
     functionName: "calBorrowFee",
     args: [
@@ -212,7 +212,7 @@ export const DepositCard = () => {
     if (!selectedBorrowToken?.address || !depositAmount) return;
 
     writeContract({
-      address: ZEROBANK_LAUNCHPAD_ADDRESS as Address,
+      address: ZEROBANK_ADDRESS as Address,
       abi: ZeroBankABI,
       functionName: "shortToken",
       args: [selectedBorrowToken.address as Address, BigInt(ltv), 9000n],
