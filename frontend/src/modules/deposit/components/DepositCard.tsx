@@ -20,6 +20,23 @@ import { ZEROBANK_ADDRESS } from "../../../const";
 import ZeroBankABI from "../../../assets/abis/ZeroBank.json";
 import { createPosition } from "../../../services/positions";
 
+const CHAINLINK_BNB_USD = "0x0567F2323251f0Aab15c8dFb1967E4e8A7D42aeE";
+const CHAINLINK_ABI = [
+  {
+    inputs: [],
+    name: "latestRoundData",
+    outputs: [
+      { internalType: "uint80", name: "roundId", type: "uint80" },
+      { internalType: "int256", name: "answer", type: "int256" },
+      { internalType: "uint256", name: "startedAt", type: "uint256" },
+      { internalType: "uint256", name: "updatedAt", type: "uint256" },
+      { internalType: "uint80", name: "answeredInRound", type: "uint80" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
 const TokenInput = ({
   label,
   amount,
@@ -107,6 +124,16 @@ export const DepositCard = () => {
   const isValidDepositAmount =
     !!depositAmount && !isNaN(Number(depositAmount)) && Number(depositAmount) > 0;
 
+  const { data: bnbPriceData } = useReadContract({
+    address: CHAINLINK_BNB_USD as Address,
+    abi: CHAINLINK_ABI,
+    functionName: "latestRoundData",
+    query: { staleTime: 1000 * 60 },
+  });
+  const bnbPriceUSD = bnbPriceData
+    ? Number(formatUnits((bnbPriceData as [bigint, bigint, bigint, bigint, bigint])[1], 8))
+    : 0;
+
   const { data: borrowAmountData } = useReadContract({
     address: ZEROBANK_ADDRESS as Address,
     abi: ZeroBankABI,
@@ -191,6 +218,15 @@ export const DepositCard = () => {
       const updatePositionAndRefresh = async () => {
         if (address && selectedBorrowToken?.address && depositAmount && hash) {
           try {
+            const borrowAmountNum = borrowAmountData
+              ? Number(formatUnits(borrowAmountData as bigint, selectedBorrowToken.decimals))
+              : 0;
+            const depositAmountNum = Number(depositAmount);
+            const entryPriceUsd =
+              borrowAmountNum > 0 && bnbPriceUSD > 0
+                ? ((depositAmountNum * ltv) / 100 / borrowAmountNum) * bnbPriceUSD
+                : undefined;
+
             await createPosition({
               userAddress: address,
               tokenAddress: selectedBorrowToken.address,
@@ -198,6 +234,7 @@ export const DepositCard = () => {
               collateralAmountWei: parseUnits(depositAmount, 18).toString(),
               txHash: hash,
               chainId: chainId,
+              entryPriceUsd,
             });
             // Invalidate backend positions query after successful creation
             await queryClient.invalidateQueries({
