@@ -142,6 +142,24 @@ export const DepositCard = () => {
   });
   console.log("borrowAmountData", borrowAmountData, "feeData", feeData, "feeError", feeError);
 
+  const { data: livePoolInfoData, refetch: refetchPoolInfo } = useReadContract({
+    address: ZEROBANK_ADDRESS as Address,
+    abi: ZeroBankABI,
+    functionName: "tokenPoolInfo",
+    args: [selectedBorrowToken?.address as Address],
+    query: {
+      enabled: !!selectedBorrowToken?.address,
+    },
+  });
+
+  const livePoolInfo = livePoolInfoData
+    ? (() => {
+        const [ethVault, tokenVault, borrowedTokenAmount, borrowedRate] =
+          livePoolInfoData as [bigint, bigint, bigint, bigint];
+        return { ethVault, tokenVault, borrowedTokenAmount, borrowedRate };
+      })()
+    : selectedBorrowToken?.poolInfo;
+
   const fee = feeData !== undefined ? (Number(feeData) / 100).toFixed(2) : "0.00";
 
   const queryClient = useQueryClient();
@@ -196,6 +214,7 @@ export const DepositCard = () => {
       };
 
       updatePositionAndRefresh();
+      refetchPoolInfo();
     } else if (isConfirmError) {
       toast.error("Transaction Failed!");
     }
@@ -209,6 +228,7 @@ export const DepositCard = () => {
     hash,
     chainId,
     reset,
+    refetchPoolInfo,
   ]);
 
   const handleShortAsset = () => {
@@ -378,19 +398,19 @@ export const DepositCard = () => {
 
         {selectedBorrowToken && (
           <div className="mt-6">
-            {selectedBorrowToken.poolInfo ? (
+            {livePoolInfo ? (
               <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-800/50 text-xs">
                 <div>
                   <span className="text-slate-500 block mb-1">BNB Vault</span>
                   <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
-                    {formatUnits(selectedBorrowToken.poolInfo.ethVault, 18)} BNB
+                    {formatUnits(livePoolInfo.ethVault, 18)} BNB
                   </span>
                 </div>
                 <div>
                   <span className="text-slate-500 block mb-1">Token Vault</span>
                   <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
                     {formatUnits(
-                      selectedBorrowToken.poolInfo.tokenVault,
+                      livePoolInfo.tokenVault,
                       selectedBorrowToken.decimals,
                     )}{" "}
                     {selectedBorrowToken.symbol}
@@ -400,7 +420,7 @@ export const DepositCard = () => {
                   <span className="text-slate-500 block mb-1">Borrowed</span>
                   <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
                     {formatUnits(
-                      selectedBorrowToken.poolInfo.borrowedTokenAmount,
+                      livePoolInfo.borrowedTokenAmount,
                       selectedBorrowToken.decimals,
                     )}{" "}
                     {selectedBorrowToken.symbol}
@@ -409,9 +429,7 @@ export const DepositCard = () => {
                 <div>
                   <span className="text-slate-500 block mb-1">Rate</span>
                   <span className="text-slate-300 font-mono bg-slate-900/50 px-2 py-1 rounded border border-slate-800/50 block w-fit">
-                    {(
-                      Number(selectedBorrowToken.poolInfo.borrowedRate) / 100
-                    ).toFixed(2)}
+                    {(Number(livePoolInfo.borrowedRate) / 100).toFixed(2)}
                     %
                   </span>
                 </div>
